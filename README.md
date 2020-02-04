@@ -1,3 +1,3 @@
 # Phaser 3 Webpack Project Template
 
-Adapted with a simple platformer test. Built on an iPad Pro. Yay.
+Updated starter template with simple platformer demo and multi file structure. Built with an iPad Pro.
