@@ -1,6 +1,11 @@
 import "phaser";
 import config from "./config/config";
 
+import player1File from "./assets/player/Sprite-1.png";
+import player2File from "./assets/player/Sprite-2.png";
+import player4File from "./assets/player/Sprite-4.png";
+import player5File from "./assets/player/Sprite-5.png";
+import player6File from "./assets/player/Sprite-6.png";
 import wallFile from "./assets/wall.png";
 import coinFile from "./assets/coin.png";
 import enemyFile from "./assets/enemy.png";
@@ -14,6 +19,12 @@ class levelScene extends Phaser.Scene {
 
   preload() {
     console.log("loading files...");
+    this.load.image("player1", player1File);
+    this.load.image("player2", player2File);
+    this.load.image("player3", player1File);
+    this.load.image("player4", player4File);
+    this.load.image("player5", player5File);
+    this.load.image("player6", player6File);
     this.load.image("wall", wallFile);
     this.load.image("coin", coinFile);
     this.load.image("enemy", enemyFile);
@@ -24,6 +35,7 @@ class levelScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("#3598db");
 
     // Create the player in the middle of the game
+    /*
     this.player = this.add.graphics();
     this.player.clear();
     this.player.fillStyle(0xffffff, 1);
@@ -33,6 +45,35 @@ class levelScene extends Phaser.Scene {
     this.player.body.setSize(16, 16);
     this.player.x = 100;
     this.player.y = 70;
+    */
+   this.player = this.physics.add.sprite(100, 70, "player1");
+   this.player.setOrigin(0.5, 0);
+   this.anims.create({key: 'walking',
+    frames:[
+        {key: 'player1'},
+        {key: 'player2'},
+        {key: 'player3'},
+        {key: 'player4'} ],
+    frameRate: 8, repeat: -1 });
+   this.anims.create({key: 'stopWalking',
+    frames:[
+        {key: 'player2'},
+        {key: 'player3'} ],
+    frameRate: 15, repeat: 0 });
+    this.anims.create({key: 'idle',
+    frames:[
+        {key: 'player1'} ],
+    frameRate: 0, repeat: 0 });
+    this.anims.create({key: 'jump',
+    frames:[
+        {key: 'player5'} ],
+    frameRate: 0, repeat: 0 });
+    this.anims.create({key: 'fall',
+    frames:[
+        {key: 'player6'} ],
+    frameRate: 0, repeat: 0 });
+    this.player.body.gravity.y = 600;
+    this.player.jumpCounter=0;
 
     // Variable to store the arrow key pressed
     this.cursor = this.input.keyboard.createCursorKeys();
@@ -108,13 +149,60 @@ class levelScene extends Phaser.Scene {
   update() {
     if (this.playerIsDead) return;
     // Move the player when an arrow key is pressed
-    if (this.cursor.left.isDown) this.player.body.velocity.x = -200;
-    else if (this.cursor.right.isDown) this.player.body.velocity.x = 200;
-    else this.player.body.velocity.x = 0;
+    if (this.cursor.left.isDown) {
+        this.player.body.velocity.x = -100;
+        if (!this.player.isWalking && !this.player.isFalling && !this.player.isJumping) {
+            this.player.isWalking=true;
+            this.anims.play("walking", this.player);
+        }
+        if (!this.player.isFalling && !this.player.isJumping) {
+            this.player.setScale(-1,1);
+            this.player.body.setOffset(18, 0);
+        }
+    } 
+    else if (this.cursor.right.isDown) {
+        this.player.body.velocity.x = 100;
+        if (!this.player.isWalking && !this.player.isFalling && !this.player.isJumping) {
+            this.player.isWalking=true;
+            this.anims.play("walking", this.player);
+        }
+        if (!this.player.isFalling && !this.player.isJumping) {
+            this.player.setScale(1,1);
+            this.player.body.setOffset(0, 0);
+        }
+
+    }
+    else {
+        this.player.body.velocity.x = 0;
+        if(this.player.isWalking && !this.player.isFalling && !this.player.isJumping) {
+            this.player.isWalking = false;
+            this.anims.play("stopWalking", this.player);
+        }
+    }
 
     // Make the player jump if he is touching the ground
-    if (this.cursor.up.isDown && this.player.body.touching.down)
-      this.player.body.velocity.y = -250;
+    if (this.cursor.up.isDown && this.player.body.touching.down) {
+        if(!this.player.isJumping) {
+            this.player.isJumping = true;
+            this.player.isFalling = false;
+            this.player.body.velocity.y = -250;
+            this.anims.play("jump", this.player);
+        }
+    }
+    if (this.player.body.velocity.y > 0) {
+        if(!this.player.isFalling) {
+            this.player.isFalling = true;
+            this.anims.play("fall", this.player);
+        } 
+    }
+    if (this.player.body.touching.down && this.player.isFalling) {
+        this.player.isFalling = false;
+        this.player.isWalking = false;
+        this.player.isJumping = false;
+        this.player.jumpCounter = 0;
+        this.anims.play("idle", this.player);
+    }
+    if (this.player.isJumping) this.player.jumpCounter+=1;
   }
 
   // Function to kill a coin
